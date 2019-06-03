@@ -59,6 +59,6 @@ Thanks alot for your work!
 
 ## Screenshots
 
-![Deck](https://user-images.githubusercontent.com/757885/37592063-f58dec64-2b43-11e8-9727-1308d663786d.jpg)
-![Browser](https://user-images.githubusercontent.com/757885/45928219-371e9a80-bf0e-11e8-85b4-931cb41554a9.jpg)
+![Deck](https://github.com/frankmohaupt/misc/blob/master/Deck.jpg)
+![Browser](https://github.com/frankmohaupt/misc/blob/master/Browser.jpg)
 ![FX Browser](https://user-images.githubusercontent.com/757885/33605793-1ce1edb8-d989-11e7-861a-869e0d495d5e.jpg)
