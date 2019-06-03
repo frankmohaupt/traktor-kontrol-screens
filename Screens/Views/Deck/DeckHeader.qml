@@ -256,7 +256,7 @@ Item {
     id: top_middle_text
     explicitName: ""
     deckId:  deck_Id
-    visible: isLoaded && (prefs.displayBeatCounter > 0)
+    visible: isLoaded && prefs.displayBeatCountdown
     width:   fieldWidthWide
     height:  _intSetInState
     anchors.top:         parent.top

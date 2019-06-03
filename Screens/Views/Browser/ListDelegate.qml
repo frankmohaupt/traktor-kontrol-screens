@@ -15,32 +15,36 @@ import './../Widgets' as Widgets
 Item {
   id: contactDelegate
 
-  property int            screenFocus:           0
-  property color          deckColor :            qmlBrowser.focusColor
-  property color          textColor :            ListView.isCurrentItem ? deckColor : colors.colorFontsListBrowser
-  property bool           isCurrentItem :        ListView.isCurrentItem
-  property string         prepIconColorPostfix:  (screenFocus < 2 && ListView.isCurrentItem) ? "Blue" : ((screenFocus > 1 && ListView.isCurrentItem) ? "White" : "Grey")
-
-  readonly property int   textTopMargin:         1 // centers text vertically
-  readonly property bool  isLoaded:              (model.dataType == BrowserDataType.Track) ? model.loadedInDeck.length > 0 : false
+  property int           screenFocus:           0
+  property int           artistWidthInit:       prefs.displayBrowserArtist ? 140 : 0
+  property int           trackWidthInit:        prefs.displayBrowserTrackname ? 190 : 0
+  property int           bpmWidthInit:          prefs.displayBrowserBpm ? 27 : 0
+  property int           keyWidthInit:          prefs.camelotKey ? 32 : 0
+  property int           keyMatchWidthInit:     prefs.camelotKey ? 20 : 0
+  property int           ratingWidthInit:       prefs.displayBrowserRating ? 20 : 0
+  property color         deckColor :            qmlBrowser.focusColor
+  property color         textColor :            ListView.isCurrentItem ? deckColor : colors.colorFontsListBrowser
+  property color         playedColor:           "#242424"
+  property color         unplayedColor:         "#7F7F7F"
+  property bool          isCurrentItem :        ListView.isCurrentItem
+  property string        prepIconColorPostfix:  (screenFocus < 2 && ListView.isCurrentItem) ? "Blue" : ((screenFocus > 1 && ListView.isCurrentItem) ? "White" : "Grey")
+  readonly property int  textTopMargin:         1 // centers text vertically
+  readonly property bool isLoaded:              (model.dataType == BrowserDataType.Track) ? model.loadedInDeck.length > 0 : false
   // visible: !ListView.isCurrentItem
   readonly property variant keyText:            ["8B", "3B", "10B", "5B", "12B", "7B", "2B", "9B", "4B", "11B", "6B", "1B",
                                                  "5A", "12A", "7A", "2A", "9A", "4A", "11A", "6A", "1A", "8A", "3A", "10A"]
 
-  property color          keyMatchColor :         textColor
-  property color          tempoMatchColor :       textColor
-  property int            browserFontSize:        prefs.displayMoreItems ? fonts.scale(14) : fonts.scale(15) 
-
-  AppProperty { id: masterClockBpm;   path: "app.traktor.masterclock.tempo"; onValueChanged: { updateMatchInfo(); } }
-  AppProperty { id: masterKeyDisplay; path: "app.traktor.decks." + (masterDeckId.value + 1) + ".track.key.key_for_display" ; onValueChanged: { updateMatchInfo(); }}
-  AppProperty { id: masterDeckId;     path: "app.traktor.masterclock.source_id"; onValueChanged: { updateMatchInfo(); } }
-
+  property int browserFontSize: prefs.displayMoreItems ? fonts.scale(14) : fonts.scale(15.5)
 
   height:                       prefs.displayMoreItems ? 25 : 32
   anchors.left:                 parent.left
   anchors.right:                parent.right
 
-  Component.onCompleted:  { updateMatchInfo(); }
+  property int           coverWidthInit:        (prefs.displayAlbumCover || (model.dataType == BrowserDataType.Folder))? height : 0 // 25
+
+  // set width
+  property int           trackWidth:  (screen.width - (coverWidthInit + artistWidthInit + bpmWidthInit + keyWidthInit + keyMatchWidthInit + ratingWidthInit))
+  property int           artistWidth: (screen.width - (coverWidthInit + trackWidth + bpmWidthInit + keyWidthInit + keyMatchWidthInit + ratingWidthInit))
 
   // container for zebra & track infos
   Rectangle {
@@ -58,16 +62,17 @@ Item {
 
     // track name, toggles with folder name
     Rectangle {
-      color:  (index%2 == 0) ? colors.colorGrey08 : "transparent" 
+      color:  (index%2 == 0) ? colors.colorGrey08 : "transparent"
       id: firstFieldTrack
       anchors.left: parent.left //listImage.right
       anchors.top: parent.top
       anchors.bottom: parent.bottom
       anchors.topMargin: contactDelegate.textTopMargin
-      width: 190
-      visible: (model.dataType == BrowserDataType.Track)
+//      anchors.leftMargin: 33
+      width: trackWidth // 190
+      visible: ((trackWidth > 0) &  (model.dataType == BrowserDataType.Track)) ? true : false
 
-      //! Dummy text to measure maximum text length dynamically and adjust icons behind it.
+      //! Dummy text to measure maximum text lenght dynamically and adjust icons behind it.
       Text {
         id: textLengthDummy
         visible: false
@@ -79,11 +84,12 @@ Item {
         id: firstFieldText
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        width: (textLengthDummy.width) > 180 ? 180 : textLengthDummy.width
+        width: (textLengthDummy.width) > trackWidth ? trackWidth : textLengthDummy.width
+        // visible: false
         elide: Text.ElideRight
         text: textLengthDummy.text
         font.pixelSize: browserFontSize
-        color: textColor
+        color: model.prevPlayed? playedColor : unplayedColor
         verticalAlignment: Text.AlignVCenter
       }
 
@@ -91,9 +97,14 @@ Item {
         id: prepListIcon
         visible: (model.dataType == BrowserDataType.Track) ? model.prepared : false
         source: "./../Images/PrepListIcon" + prepIconColorPostfix + ".png"
-        anchors.left:           firstFieldText.right
+        // width: sourceSize.width
+        // height: sourceSize.height
+        anchors.left: firstFieldText.right
         anchors.verticalCenter: parent.verticalCenter
-       anchors.leftMargin: 2
+        // anchors.top: parent.top
+        // anchors.bottom: parent.bottom
+        // anchors.topMargin: 0
+        anchors.leftMargin: 5
       }
     }   
 
@@ -104,7 +115,8 @@ Item {
       anchors.top: parent.top
       anchors.bottom: parent.bottom
       anchors.topMargin: contactDelegate.textTopMargin
-      color: textColor
+//      anchors.leftMargin: 33
+      color: model.prevPlayed? playedColor : unplayedColor
       clip: true
       text: (model.dataType == BrowserDataType.Folder) ? model.nodeName : ""
       font.pixelSize: browserFontSize
@@ -120,16 +132,15 @@ Item {
       id: trackTitleField
       anchors.leftMargin: 5
       anchors.left: (model.dataType == BrowserDataType.Track) ? firstFieldTrack.right : firstFieldFolder.right
-      anchors.right: bpmField.left
       anchors.top: parent.top
       anchors.bottom: parent.bottom
       anchors.topMargin: contactDelegate.textTopMargin
       verticalAlignment: Text.AlignVCenter
 
-      // width: 140
-      color: textColor
+      width: artistWidth // 140
+      color: model.prevPlayed? playedColor : unplayedColor
       clip: true
-      text: (model.dataType == BrowserDataType.Track) ? model.artistName: ""
+      text: (artistWidth > 0 ? ((model.dataType == BrowserDataType.Track) ? model.artistName: "") : "")
       font.pixelSize: browserFontSize
       elide: Text.ElideRight
     }  
@@ -137,49 +148,18 @@ Item {
     // bpm
     Text {
       id: bpmField
-      anchors.right: tempoMatch.left
+      anchors.left: trackTitleField.right    
       anchors.top: parent.top
       anchors.bottom: parent.bottom
       anchors.topMargin: contactDelegate.textTopMargin
       verticalAlignment: Text.AlignVCenter
       horizontalAlignment: Text.AlignRight
-      width: 27
-      color: masterDeckId.value >= 0 ? tempoMatchColor : textColor
+      width: bpmWidthInit // 27
+      color: model.prevPlayed? playedColor : unplayedColor
       clip: true
-      text: (model.dataType == BrowserDataType.Track) ? model.bpm.toFixed(0) : ""
+      text: (bpmWidthInit > 0 ? ((model.dataType == BrowserDataType.Track) ? model.bpm.toFixed(0) : "") : "")
       font.pixelSize: browserFontSize
-      font.family: "Pragmatica"
     }  
-
-    Item {
-      id : tempoMatch
-      anchors.right:          keyField.left
-      anchors.top:            parent.top
-      anchors.bottom:         parent.bottom
-      width:                  16
-      visible:                prefs.displayMatchGuides
-
-      Widgets.Triangle {
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.horizontalCenter: parent.horizontalCenter
-        width:              8
-        height:             8
-        color:              tempoMatchColor // colors.colorGrey40
-        rotation:           model.bpm > masterClockBpm.value ? 180 : 0
-        visible:            masterDeckId.value >= 0 && Math.round(Math.abs(masterClockBpm.value - model.bpm)) >= 1 && Math.round(Math.abs(masterClockBpm.value - model.bpm)) <= 4
-        antialiasing:       false
-      }
-
-      Rectangle {
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.horizontalCenter: parent.horizontalCenter
-        width:              8
-        height:             width
-        radius:             width * 0.5
-        color:              tempoMatchColor
-        visible:            masterDeckId.value >= 0 && Math.round(Math.abs(masterClockBpm.value - model.bpm)) < 1
-      }
-    }
 
     function colorForKey(keyIndex) {
       return colors.musicalKeyColors[keyIndex]
@@ -188,62 +168,52 @@ Item {
     // key
     Text {
       id: keyField
-      anchors.right:       keyMatchField.left
-      // anchors.left:        tempoMatch.right
+      anchors.left: bpmField.right
       anchors.top: parent.top
       anchors.bottom: parent.bottom
       anchors.topMargin: contactDelegate.textTopMargin
       verticalAlignment: Text.AlignVCenter
       horizontalAlignment: Text.AlignRight
 
-      color: (model.dataType == BrowserDataType.Track) ? (((model.key == "none") || (model.key == "None")) ? textColor : (qmlBrowser.sortingId == 28 ? parent.colorForKey(model.keyIndex) : textColor)) : textColor
-      width: 26
-      text: (model.dataType == BrowserDataType.Track) ? (((model.key == "none") || (model.key == "None")) ? "-" : (prefs.camelotKey ? keyText[model.keyIndex] : model.key)) : ""
+      color: (model.dataType == BrowserDataType.Track) ? ((model.prevPlayed)? playedColor : (((model.key == "none") || (model.key == "None")) ? textColor : (qmlBrowser.sortingId == 28 ? parent.colorForKey(model.keyIndex) : textColor))) : textColor
+      width: keyWidthInit // 32
+      clip: true
+      text: (keyWidthInit > 0 ? ((model.dataType == BrowserDataType.Track) ? (((model.key == "none") || (model.key == "None")) ? "-" : (prefs.camelotKey ? keyText[model.keyIndex] : model.key)) : "") : "")
       font.pixelSize: browserFontSize
-      font.family: "Pragmatica"
     }
 
-    Item {
-      id : keyMatchField
-      anchors.right:          ratingField.left
-      anchors.top:            parent.top
-      anchors.bottom:         parent.bottom
-      visible:                prefs.displayMatchGuides
-      width:                  16
+    // keyMatch
+    Text {
+      id: keyMatchField
+      anchors.left: keyField.right
+      anchors.right: ratingField.left
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.topMargin: contactDelegate.textTopMargin
+      verticalAlignment: Text.AlignVCenter
 
-      Widgets.Triangle {
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.horizontalCenter: parent.horizontalCenter
-        width:              8
-        height:             8
-        color:              keyMatchColor
-        rotation:           utils.getMasterKeyOffset(masterKeyDisplay.value, model.key) > 0 ? 180 : 0
-        visible:            masterDeckId.value >= 0 && Math.abs(utils.getMasterKeyOffset(masterKeyDisplay.value, model.key)) > 1 // masterDeckId.value >= 0 // && Math.round(Math.abs(masterClockBpm.value - model.bpm)) >= 1 && Math.round(Math.abs(masterClockBpm.value - model.bpm)) <= 4
-        antialiasing:       false
-      }
+      anchors.rightMargin: 5
+      horizontalAlignment: Text.AlignRight
 
-      Rectangle {
-        anchors.verticalCenter:   parent.verticalCenter
-        anchors.horizontalCenter: parent.horizontalCenter
-        width:              8
-        height:             width
-        radius:             width * 0.5
-        color:              keyMatchColor
-        visible:            masterDeckId.value >= 0 && Math.abs(utils.getMasterKeyOffset(masterKeyDisplay.value, model.key)) <= 1 // masterDeckId.value >= 0 && Math.abs(utils.getMasterKeyOffset(masterKeyDisplay.value, model.key)) == 0
-      }
+      color: getListItemKeyTextColor() // (model.dataType == BrowserDataType.Track) ? (((model.key == "none") || (model.key == "None")) ? textColor : parent.colorForKey(model.keyIndex)) : textColor
+      width: keyMatchWidthInit // 20
+      clip: true
+
+      text: (keyMatchWidthInit > 0 ? ((model.dataType == BrowserDataType.Track) ? (((model.key == "none") || (model.key == "None")) ? "" : utils.getMasterKeyOffset(qmlBrowser.getMasterKey(), model.key)) : "") : "")
+      font.pixelSize: browserFontSize
     }
 
     // track rating
     Widgets.TrackRating {
       id: ratingField
-      visible:     (model.dataType == BrowserDataType.Track)
+      visible:     ratingWidthInit > 0 ? true : false
       rating:      (model.dataType == BrowserDataType.Track) ? ((model.rating == "") ? 0 : model.rating ) : 0
       // rating:      ((model.dataType == BrowserDataType.Track) && (model.rating != "")) ? ratingMap[model.rating] : 0
       anchors.right: parent.right
       anchors.rightMargin: 2
       anchors.verticalCenter: parent.verticalCenter
-      height: 13
-      width: 20
+      height: ratingWidthInit > 0 ? 13 : 0
+      width: ratingWidthInit // 20
       bigLineColor:   contactDelegate.isCurrentItem ? ((contactDelegate.screenFocus < 2) ? colors.colorDeckBlueBright       : colors.colorWhite )    : colors.colorGrey64
       smallLineColor: contactDelegate.isCurrentItem ? ((contactDelegate.screenFocus < 2) ? colors.colorDeckBlueBright50Full : colors.colorGrey32 )   : colors.colorGrey32
     }
@@ -262,10 +232,10 @@ Item {
     anchors.top: parent.top
     anchors.left: parent.left
     anchors.leftMargin: 3              
-    width: parent.height // 25
-    height: parent.height // 25
+    width: coverWidthInit // 25
+    height: coverWidthInit // 25
     color: (model.coverUrl != "") ? "transparent" : ((contactDelegate.screenFocus < 2) ? colors.colorDeckBlueBright50Full : colors.colorGrey128 )
-    visible: (model.dataType == BrowserDataType.Track)
+    visible: (coverWidthInit > 0)
 
     Image {
       id: cover
@@ -322,6 +292,8 @@ Item {
 
     Image {
       anchors.centerIn: trackImage
+//      width: 17
+//      height: 17
       source: "./../images/PreviewIcon_Big.png"
       fillMode: Image.Pad
       clip: true
@@ -419,47 +391,32 @@ Item {
     return true
   }
 
-  function updateKeyMatch() {
 
-    if (masterDeckId.value < 0) return;
+  function getListItemKeyTextColor() {
+    if (model.dataType != BrowserDataType.Track) {
+      return textColor;
+    }
 
-    switch (utils.getMasterKeyOffset(masterKeyDisplay.value, model.key)) {
+    var keyOffset = utils.getMasterKeyOffset(qmlBrowser.getMasterKey(), model.key);
+
+    switch (keyOffset) {
       case -7:
       case -2:
-        keyMatchColor = "yellow";
-        break;
+        return colors.colorOrange;
       case -1:
       case  0:
       case  1:
-        keyMatchColor = colors.colorGreen;
-        break;
+        return colors.color11MusicalKey;
       case  2:
       case  7:
-        keyMatchColor = "yellow"; // colors.color07MusicalKey; // Green
-        break;
+        return colors.color07MusicalKey; // Green
     }
-  }
 
-  function updateTempoMatch() {
-
-    if (masterDeckId.value < 0) return;
-
-    switch (Math.round(Math.abs(masterClockBpm.value - model.bpm))) {
-      case 0:
-      case 1:
-      case 2:
-        tempoMatchColor = colors.colorGreen;
-        break;
-      case 3: 
-      case 4:
-        tempoMatchColor = "yellow"; //colors.colorOrange;
-        break;
+    if (keyOffset == 3 || keyOffset == -3) {
+      return colors.colorRed;
     }
-  }
 
-  function updateMatchInfo() {
-    updateKeyMatch();
-    updateTempoMatch();
+    return textColor;
   }
 
   // // cover border
