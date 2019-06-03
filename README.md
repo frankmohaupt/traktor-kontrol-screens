@@ -1,3 +1,6 @@
+This is a Fork of kokernutz traktor-kontrol-screens repo to continuing the traktor-kontrol v2
+Thanks alot for your work!
+
 # Replacement screens for the Native Instruments Traktor Kontrol D2, S5, and S8
 
 **Contact:**
@@ -57,5 +60,5 @@
 ## Screenshots
 
 ![Deck](https://user-images.githubusercontent.com/757885/37592063-f58dec64-2b43-11e8-9727-1308d663786d.jpg)
-![Browser](https://user-images.githubusercontent.com/757885/45928219-371e9a80-bf0e-11e8-85b4-931cb41554a9.jpg))
+![Browser](https://user-images.githubusercontent.com/757885/45928219-371e9a80-bf0e-11e8-85b4-931cb41554a9.jpg)
 ![FX Browser](https://user-images.githubusercontent.com/757885/33605793-1ce1edb8-d989-11e7-861a-869e0d495d5e.jpg)
